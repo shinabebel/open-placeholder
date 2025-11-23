@@ -9,7 +9,7 @@ async function loadGoogleFont(fontFamily: string, text: string) {
   try {
     const url = `https://fonts.googleapis.com/css?family=${fontFamily}&text=${encodeURIComponent(text)}`;
     const css = await fetch(url).then((res) => res.text());
-    
+
     const resource = css.match(
       /src: url\((.+)\) format\('(opentype|truetype|woff)'\)/,
     );
@@ -25,6 +25,39 @@ async function loadGoogleFont(fontFamily: string, text: string) {
   }
   return null;
 }
+
+function calculateFontSize(
+  width: number,
+  height: number,
+  text: string,
+): number {
+  const lines = text.split('\n');
+  const lineCount = lines.length;
+
+  const maxLineLength = Math.max(...lines.map((line) => line.length));
+
+  const widthBasedSize = (width * 0.8) / (maxLineLength * 0.6);
+
+  const lineHeight = 1.3;
+  const heightBasedSize = (height * 0.8) / (lineCount * lineHeight);
+
+  let fontSize = Math.min(widthBasedSize, heightBasedSize);
+
+  const minFontSize = 12;
+  const maxFontSize = Math.min(width, height) * 0.5;
+
+  fontSize = Math.max(minFontSize, Math.min(fontSize, maxFontSize));
+
+  return Math.floor(fontSize);
+}
+
+function processColor(color: string): string {
+    if (!color) return color;
+    if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(color)) {
+      return `#${color}`;
+    }
+    return color;
+  };
 
 interface Params {
   args: string[];
@@ -53,28 +86,18 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
     }
   }
 
-  const backgroundColor = bgParam || '#cccccc';
-  const textColor = textParam || '#333333';
+  const backgroundColor = processColor(bgParam || 'cccccc');
+  const textColor = processColor(textParam || '333333');
 
   const { searchParams } = new URL(request.url);
-  const text = searchParams.get('text') || `${width}x${height}`;
+  const rawText = searchParams.get('text') || `${width}x${height}`;
+  const text = rawText.replace(/\\n/g, '\n');
+
   const fontName = searchParams.get('font') || 'Roboto';
 
   const fontData = await loadGoogleFont(fontName, text);
-  console.log('font data is loaded');
 
-  const targetWidth = width * 0.8;
-  const textLength = text.length;
-  let estimatedFontSize = targetWidth / (textLength * 5);
-  const maxFontSize = height * 0.3;
-  const minFontSize = 8;
-  if (estimatedFontSize < 40) {
-    estimatedFontSize = Math.sqrt((width * height) / textLength);
-  }
-  const fontSize = Math.floor(
-    Math.min(Math.max(estimatedFontSize, minFontSize), maxFontSize),
-  );
-  console.log(fontSize);
+  const fontSize = calculateFontSize(width * 0.8, height * 0.8, text);
 
   return new ImageResponse(
     <div
@@ -86,8 +109,8 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       }}
     >
       <div
-        tw="flex w-[80%] flex-wrap items-center justify-center text-center"
-        style={{ fontSize }}
+        tw="flex w-[80%] flex-wrap items-center justify-center text-center whitespace-pre"
+        style={{ fontSize, whiteSpace: 'pre-line' }}
       >
         {text}
       </div>
