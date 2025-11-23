@@ -30,7 +30,7 @@ function getVisualLength(text: string): number {
   let length = 0;
   for (const char of text) {
     if (char.charCodeAt(0) <= 127) {
-      length += 0.6; 
+      length += 0.6;
     } else {
       length += 1.0;
     }
@@ -64,12 +64,12 @@ function calculateFontSize(
 }
 
 function processColor(color: string): string {
-    if (!color) return color;
-    if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(color)) {
-      return `#${color}`;
-    }
-    return color;
-  };
+  if (!color) return color;
+  if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(color)) {
+    return `#${color}`;
+  }
+  return color;
+}
 
 interface Params {
   args: string[];
@@ -139,6 +139,11 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
             },
           ]
         : undefined,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Disposition': 'inline; filename="image.png"',
+      },
     },
   );
 }
