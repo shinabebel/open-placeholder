@@ -26,6 +26,18 @@ async function loadGoogleFont(fontFamily: string, text: string) {
   return null;
 }
 
+function getVisualLength(text: string): number {
+  let length = 0;
+  for (const char of text) {
+    if (char.charCodeAt(0) <= 127) {
+      length += 0.6; 
+    } else {
+      length += 1.0;
+    }
+  }
+  return length;
+}
+
 function calculateFontSize(
   width: number,
   height: number,
@@ -34,12 +46,12 @@ function calculateFontSize(
   const lines = text.split('\n');
   const lineCount = lines.length;
 
-  const maxLineLength = Math.max(...lines.map((line) => line.length));
+  const maxVisualLength = Math.max(...lines.map(getVisualLength));
 
-  const widthBasedSize = (width * 0.8) / (maxLineLength * 0.6);
+  const widthBasedSize = width / (maxVisualLength || 1);
 
   const lineHeight = 1.3;
-  const heightBasedSize = (height * 0.8) / (lineCount * lineHeight);
+  const heightBasedSize = height / (lineCount * lineHeight);
 
   let fontSize = Math.min(widthBasedSize, heightBasedSize);
 
@@ -109,7 +121,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       }}
     >
       <div
-        tw="flex w-[80%] flex-wrap items-center justify-center text-center whitespace-pre"
+        tw="flex w-[80%] flex-wrap items-center justify-center text-center"
         style={{ fontSize, whiteSpace: 'pre-line' }}
       >
         {text}
