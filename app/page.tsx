@@ -2,19 +2,33 @@
 
 import { formatHex, parse } from 'culori';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { useSettingsStore } from '@/stores/settings-store';
 
 export default function Home() {
-  const [width, setWidth] = useState('512');
-  const [height, setHeight] = useState('512');
-  const [text, setText] = useState('placeholder');
-  const [backgroundColor, setBackgroundColor] = useState('black');
-  const [textColor, setTextColor] = useState('white');
+  const {
+    width,
+    setWidth,
+    height,
+    setHeight,
+    text,
+    setText,
+    backgroundColor,
+    setBackgroundColor,
+    textColor,
+    setTextColor,
+    font,
+    setFont,
+    fontScale,
+    setFontScale,
+  } = useSettingsStore();
+
   const url = useMemo(() => {
     const fallback = '/api/placeholder/512/black/white?text=invalid\\n';
     const w = Number.parseInt(width, 10);
@@ -22,12 +36,18 @@ export default function Home() {
     if (Number.isNaN(w) || Number.isNaN(h) || w <= 0 || h <= 0)
       return `${fallback}size`;
     const size = w === h ? w : `${w}x${h}`;
-    const bgc = parse(backgroundColor);
-    const ttc = parse(textColor);
-    if (!bgc || !ttc) return `${fallback}color`;
-    const txt = text.replace(/\n/g, '\\n');
-    return `/api/placeholder/${size}/${formatHex(bgc).slice(1)}/${formatHex(ttc).slice(1)}/image.png?text=${txt}`;
-  }, [width, height, textColor, backgroundColor, text]);
+    const bgdCol = parse(backgroundColor);
+    const txtCol = parse(textColor);
+    if (!bgdCol || !txtCol) return `${fallback}color`;
+    const bgdHex = formatHex(bgdCol).slice(1);
+    const txtHex = formatHex(txtCol).slice(1);
+    let result = `/api/placeholder/${size}/${bgdHex}/${txtHex}/image.png?`;
+    if (fontScale !== 1) result += `fontScale=${fontScale}&`;
+    if (font.length > 0) result += `font=${font}&`;
+    const txt = text.replace(/\n/g, '\\n').trim();
+    if (txt.length === 0) return `${fallback}text`;
+    return `${result}text=${txt}`;
+  }, [width, height, textColor, backgroundColor, fontScale, font, text]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -77,14 +97,41 @@ export default function Home() {
             />
           </div>
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          <Label>text</Label>
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-4">
+          <div className="flex flex-col gap-2">
+            <Label>text</Label>
+            <Textarea value={text} onChange={(e) => setText(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label>font family & weight</Label>
+              <Input value={font} onChange={(e) => setFont(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between">
+                <Label>font scale</Label>
+                <Label className="font-mono">{fontScale}</Label>
+              </div>
+              <Slider
+                value={[fontScale]}
+                min={0}
+                max={2}
+                step={0.1}
+                onValueChange={(e) => setFontScale(e[0])}
+              />
+            </div>
+          </div>
         </div>
-
-        <Button onClick={() => copyToClipboard(url)}>Copy URL</Button>
+        <Button className="my-8" onClick={() => copyToClipboard(url)}>
+          Copy Image URL
+        </Button>
         <div className="relative w-full flex-1 min-h-0">
-          <Image src={url} fill alt="placeholder" className="object-contain" />
+          <Image
+            src={url}
+            fill
+            alt="placeholder"
+            className="object-scale-down"
+          />
         </div>
       </div>
     </div>

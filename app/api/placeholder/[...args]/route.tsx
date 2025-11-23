@@ -3,25 +3,46 @@ import type { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
-async function loadGoogleFont(fontFamily: string, text: string) {
-  if (!fontFamily) return null;
+async function loadGoogleFont(fontStr: string, text: string) {
+  if (!fontStr) return null;
+
+  const [rawFamily, rawWeight] = fontStr.split(':');
+
+  const family = rawFamily;
+  const weight = rawWeight || '400';
+
+  const url = `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`;
+  const DEFAULT_FONT = 'IBM+Plex+Sans+JP';
 
   try {
-    const url = `https://fonts.googleapis.com/css?family=${fontFamily}&text=${encodeURIComponent(text)}`;
-    const css = await fetch(url).then((res) => res.text());
+    const res = await fetch(url);
 
+    if (!res.ok) {
+      console.warn(
+        `Font not found: ${fontStr} (Status: ${res.status}). Falling back to default.`,
+      );
+      if (family !== DEFAULT_FONT) {
+        return loadGoogleFont(DEFAULT_FONT, text);
+      }
+      return null;
+    }
+
+    const css = await res.text();
     const resource = css.match(
-      /src: url\((.+)\) format\('(opentype|truetype|woff)'\)/,
+      /src: url\((.+)\) format\('(opentype|truetype|ttf)'\)/,
     );
 
     if (resource) {
-      const response = await fetch(resource[1]);
-      if (response.status === 200) {
-        return await response.arrayBuffer();
+      const fontRes = await fetch(resource[1]);
+      if (fontRes.status === 200) {
+        return await fontRes.arrayBuffer();
       }
     }
   } catch (e) {
-    console.error('Font load failed:', e);
+    console.error(`Unexpected error loading font ${fontStr}:`, e);
+    if (family !== DEFAULT_FONT) {
+      return loadGoogleFont(DEFAULT_FONT, text);
+    }
   }
   return null;
 }
@@ -81,7 +102,7 @@ interface RouteProps {
 
 export async function GET(request: NextRequest, { params }: RouteProps) {
   const { args } = await params;
-  const cleanArgs = args.filter(arg => arg !== 'image.png');
+  const cleanArgs = args.filter((arg) => arg !== 'image.png');
   const [sizeParam, bgParam, textParam] = cleanArgs;
 
   let width = 300;
@@ -110,7 +131,12 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
 
   const fontData = await loadGoogleFont(fontName, text);
 
-  const fontSize = calculateFontSize(width * 0.8, height * 0.8, text);
+  let fontSize = calculateFontSize(width * 0.8, height * 0.8, text);
+  const fontScale = searchParams.get('fontScale') || '1';
+  const scale = Number.parseFloat(fontScale);
+  if (!Number.isNaN(scale)) {
+    fontSize *= scale;
+  }
 
   return new ImageResponse(
     <div
