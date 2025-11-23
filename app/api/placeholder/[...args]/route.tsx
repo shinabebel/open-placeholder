@@ -81,7 +81,8 @@ interface RouteProps {
 
 export async function GET(request: NextRequest, { params }: RouteProps) {
   const { args } = await params;
-  const [sizeParam, bgParam, textParam] = args;
+  const cleanArgs = args.filter(arg => arg !== 'image.png');
+  const [sizeParam, bgParam, textParam] = cleanArgs;
 
   let width = 300;
   let height = 150;

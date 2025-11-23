@@ -26,7 +26,7 @@ export default function Home() {
     const ttc = parse(textColor);
     if (!bgc || !ttc) return `${fallback}color`;
     const txt = text.replace(/\n/g, '\\n');
-    return `/api/placeholder/${size}/${formatHex(bgc).slice(1)}/${formatHex(ttc).slice(1)}?text=${txt}`;
+    return `/api/placeholder/${size}/${formatHex(bgc).slice(1)}/${formatHex(ttc).slice(1)}/image.png?text=${txt}`;
   }, [width, height, textColor, backgroundColor, text]);
 
   const copyToClipboard = async (text: string) => {
