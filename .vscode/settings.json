@@ -1,6 +1,12 @@
 {
-    "editor.codeActionsOnSave": {
-        "source.organizeImports.biome": "explicit",
-        "source.fixAll.biome": "explicit"
-    }
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "tw"
+  ]
 }
