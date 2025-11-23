@@ -93,7 +93,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
   const rawText = searchParams.get('text') || `${width}x${height}`;
   const text = rawText.replace(/\\n/g, '\n');
 
-  const fontName = searchParams.get('font') || 'Roboto';
+  const fontName = searchParams.get('font') || 'IBM+Plex+Sans+JP:700';
 
   const fontData = await loadGoogleFont(fontName, text);
 
