@@ -1,10 +1,12 @@
 'use client';
 
 import { formatHex, parse } from 'culori';
-import { CopyIcon } from 'lucide-react';
+import { CopyIcon, LinkIcon } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,13 +52,15 @@ export default function Home() {
     return `${result}text=${txt}`;
   }, [width, height, textColor, backgroundColor, fontScale, font, text]);
 
+  const fullUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}${url}`;
+  }, [url]);
+
   const copyToClipboard = async (text: string) => {
     try {
-      const origin =
-        typeof window !== 'undefined' ? window.location.origin : '';
-      const str = `${origin}${text}`;
-      await navigator.clipboard.writeText(str);
-      toast.success('Copied to clipboard', { description: str });
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied to clipboard', { description: text });
     } catch (err) {
       toast.error('Fail to copy text', { description: JSON.stringify(err) });
     }
@@ -66,6 +70,21 @@ export default function Home() {
     <div className="flex flex-col w-full min-h-screen items-center justify-center font-sans">
       <div className="container flex flex-col min-h-screen items-center justify-center gap-4 p-8">
         <Label className="text-2xl">open placeholder</Label>
+        <div className="flex gap-4">
+          <Link
+            className="relative w-6 aspect-square"
+            href="https://github.com/shinabebel/open-placeholder"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              src="./github.svg"
+              alt="github"
+              fill
+              className="object-contain"
+            />
+          </Link>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 w-full gap-4">
           <div className="flex flex-col gap-2">
             <Label>width</Label>
@@ -127,7 +146,12 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <Button className="my-8" onClick={() => copyToClipboard(url)}>
+        <Alert variant="default">
+          <LinkIcon />
+          <AlertTitle>URL</AlertTitle>
+          <AlertDescription>{fullUrl}</AlertDescription>
+        </Alert>
+        <Button className="my-2" onClick={() => copyToClipboard(fullUrl)}>
           <CopyIcon />
           Copy Image URL
         </Button>
