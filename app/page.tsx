@@ -1,6 +1,7 @@
 'use client';
 
 import { formatHex, parse } from 'culori';
+import { CopyIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { toast } from 'sonner';
@@ -100,7 +101,11 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-4">
           <div className="flex flex-col gap-2">
             <Label>text</Label>
-            <Textarea value={text} onChange={(e) => setText(e.target.value)} />
+            <Textarea
+              className="flex flex-1"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -123,6 +128,7 @@ export default function Home() {
           </div>
         </div>
         <Button className="my-8" onClick={() => copyToClipboard(url)}>
+          <CopyIcon />
           Copy Image URL
         </Button>
         <div className="relative w-full flex-1 min-h-0">
