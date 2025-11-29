@@ -113,10 +113,13 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       const [w, h] = sizeParam.split('x');
       width = Number.parseInt(w, 10);
       height = Number.parseInt(h, 10);
+      width = Math.min(Number.isNaN(width) ? DEFAULT_DIMENSION : width, MAX_DIMENSION);
+      height = Math.min(Number.isNaN(height) ? DEFAULT_DIMENSION : height, MAX_DIMENSION);
     } else {
-      const size = Number.parseInt(sizeParam, 10);
-      width = size;
-      height = size;
+      const size = parseInt(sizeParam, 10);
+      const safeSize = Math.min(Number.isNaN(size) ? DEFAULT_DIMENSION : size, MAX_DIMENSION);
+      width = safeSize;
+      height = safeSize;
     }
   }
 
