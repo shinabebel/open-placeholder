@@ -3,11 +3,13 @@ import type { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
+const MAX_DIMENSION = 2048;
+const DEFAULT_DIMENSION = 300;
+
 async function loadGoogleFont(fontStr: string, text: string) {
   if (!fontStr) return null;
 
   const [rawFamily, rawWeight] = fontStr.split(':');
-
   const family = rawFamily;
   const weight = rawWeight || '400';
 
@@ -15,24 +17,22 @@ async function loadGoogleFont(fontStr: string, text: string) {
   const DEFAULT_FONT = 'IBM+Plex+Sans+JP';
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: {} });
 
     if (!res.ok) {
       console.warn(
         `Font not found: ${fontStr} (Status: ${res.status}). Falling back to default.`,
       );
       if (family !== DEFAULT_FONT) {
-        return loadGoogleFont(DEFAULT_FONT, text);
+        return loadGoogleFont(`${DEFAULT_FONT}:${weight}`, text);
       }
       return null;
     }
 
     const css = await res.text();
-    const resource = css.match(
-      /src: url\((.+)\) format\('(opentype|truetype|ttf)'\)/,
-    );
+    const resource = css.match(/src: url\((?:'|")?(.+?)(?:'|")?\)/);
 
-    if (resource) {
+    if (resource?.[1]) {
       const fontRes = await fetch(resource[1]);
       if (fontRes.status === 200) {
         return await fontRes.arrayBuffer();
@@ -41,7 +41,7 @@ async function loadGoogleFont(fontStr: string, text: string) {
   } catch (e) {
     console.error(`Unexpected error loading font ${fontStr}:`, e);
     if (family !== DEFAULT_FONT) {
-      return loadGoogleFont(DEFAULT_FONT, text);
+      return loadGoogleFont(`${DEFAULT_FONT}:${weight}`, text);
     }
   }
   return null;
@@ -127,15 +127,15 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
   const rawText = searchParams.get('text') || `${width}x${height}`;
   const text = rawText.replace(/\\n/g, '\n');
 
-  const fontName = searchParams.get('font') || 'IBM+Plex+Sans+JP:700';
+  const fontParam = searchParams.get('font') || 'IBM+Plex+Sans+JP:700';
+  const [fontFamilyName] = fontParam.split(':');
 
-  const fontData = await loadGoogleFont(fontName, text);
+  const fontData = await loadGoogleFont(fontParam, text);
 
   let fontSize = calculateFontSize(width * 0.8, height * 0.8, text);
-  const fontScale = searchParams.get('fontScale') || '1';
-  const scale = Number.parseFloat(fontScale);
-  if (!Number.isNaN(scale)) {
-    fontSize *= scale;
+  const fontScale = Number.parseFloat(searchParams.get('fontScale') || '1');
+  if (!Number.isNaN(fontScale)) {
+    fontSize *= fontScale;
   }
 
   return new ImageResponse(
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       style={{
         backgroundColor: backgroundColor,
         color: textColor,
-        fontFamily: fontData ? `"${fontName}"` : 'sans-serif',
+        fontFamily: fontData ? `"${fontFamilyName}"` : 'sans-serif',
       }}
     >
       <div
@@ -160,15 +160,17 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       fonts: fontData
         ? [
             {
-              name: fontName,
+              name: fontFamilyName,
               data: fontData,
               style: 'normal',
+              weight: parseInt(fontParam.split(':')[1] || '400', 10) as any,
             },
           ]
         : undefined,
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control':
+          'public, max-age=31536000, s-maxage=31536000, immutable',
         'Content-Disposition': 'inline; filename="image.png"',
       },
     },
