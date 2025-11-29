@@ -4,8 +4,9 @@ import { formatHex, parse } from 'culori';
 import { CopyIcon, LinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useShallow } from 'zustand/react/shallow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { useSettingsStore } from '@/stores/settings-store';
 
 export default function Home() {
   const {
+    hasHydrated,
     width,
     setWidth,
     height,
@@ -30,7 +32,29 @@ export default function Home() {
     setFont,
     fontScale,
     setFontScale,
-  } = useSettingsStore();
+  } = useSettingsStore(
+    useShallow((state) => ({
+      hasHydrated: state.hasHydrated,
+      width: state.width,
+      setWidth: state.setWidth,
+      height: state.height,
+      setHeight: state.setHeight,
+      text: state.text,
+      setText: state.setText,
+      backgroundColor: state.backgroundColor,
+      setBackgroundColor: state.setBackgroundColor,
+      textColor: state.textColor,
+      setTextColor: state.setTextColor,
+      font: state.font,
+      setFont: state.setFont,
+      fontScale: state.fontScale,
+      setFontScale: state.setFontScale,
+    })),
+  );
+  const [origin, setOrigin] = useState('');
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   const url = useMemo(() => {
     const fallback = '/api/placeholder/512/black/white?text=invalid\\n';
@@ -53,9 +77,8 @@ export default function Home() {
   }, [width, height, textColor, backgroundColor, fontScale, font, text]);
 
   const fullUrl = useMemo(() => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     return `${origin}${url}`;
-  }, [url]);
+  }, [origin, url]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -65,6 +88,14 @@ export default function Home() {
       toast.error('Fail to copy text', { description: JSON.stringify(err) });
     }
   };
+
+  if (!hasHydrated) {
+    return (
+      <div className="flex flex-col w-full min-h-screen items-center justify-center font-sans">
+        <Label>Is loading...</Label>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full min-h-screen items-center justify-center font-sans">

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 type SettingsState = {
+  hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
   width: string;
   setWidth: (width: string) => void;
   height: string;
@@ -21,6 +23,8 @@ type SettingsState = {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
+      hasHydrated: false,
+      setHasHydrated: (v) => set({ hasHydrated: v }),
       width: '512',
       setWidth: (value) => set({ width: value }),
       height: '512',
@@ -38,6 +42,11 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHasHydrated(true);
+        }
+      },
     },
   ),
 );
